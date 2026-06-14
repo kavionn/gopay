@@ -1,0 +1,24 @@
+{
+  "name": "gobiz-grab",
+  "version": "1.0.0",
+  "description": "Node.js module untuk berinteraksi dengan API GoBiz (GoPay Merchant) — riwayat transaksi & pemantauan pembayaran real-time.",
+  "type": "module",
+  "main": "gobiz.js",
+  "exports": "./gobiz.js",
+  "keywords": [
+    "gopay",
+    "gobiz",
+    "gojek",
+    "payment",
+    "merchant",
+    "indonesia"
+  ],
+  "author": "kavionn",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "moment-timezone": "^0.5.45"
+  }
+}
