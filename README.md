@@ -74,6 +74,19 @@ Buat file `.env` di direktori yang **sama** dengan `gobiz.js` dan isi dengan kre
 ```env
 GOPAY_EMAIL=email@merchant.com
 GOPAY_PASSWORD=password_kamu
+
+# Diperlukan jika menggunakan payment.js
+# String QRIS statis dari akun GoPay Merchant kamu (bisa di-scan dari gambar QRIS)
+QRIS_STRING=00020101021226...
+
+# Nominal pembayaran default (Rupiah), bisa di-override via argumen CLI
+PRICE_AMOUNT=2000
+```
+
+Salin `.env.example` sebagai titik awal:
+
+```bash
+cp .env.example .env
 ```
 
 ### File `.gopay_cache.json` *(dibuat otomatis)*
@@ -95,12 +108,13 @@ Contoh isi file yang dibuat otomatis:
 
 ## 🚀 Cara Penggunaan
 
-> [!WARNING]
-> **⚠️ Risiko Akun Terkena Ban:** Modul ini mengakses API internal GoBiz yang tidak resmi. Penggunaan yang tidak bijak (polling terlalu agresif, terlalu banyak request, dll.) berisiko membuat akun kamu **diblokir oleh Gojek**. Untuk meminimalisir risiko, gunakan metode **[cek manual](#2-mengambil-riwayat-transaksi--direkomendasikan-untuk-anti-ban)** dengan `getHistory` setiap 2–5 menit, daripada mengandalkan `GoPayWatcher` dengan interval sangat pendek. Penggunaan sepenuhnya menjadi **tanggung jawab kamu sendiri**.
+### 1. Menunggu Pembayaran Masuk ⭐ *(Direkomendasikan)*
 
-### 1. Menunggu Pembayaran Masuk
+> [!TIP]
+> **Mengapa Watcher lebih efisien?**
+> `GoPayWatcher` melakukan **satu request API** per interval, lalu mendeteksi semua transaksi baru dari hasilnya sekaligus — berapapun jumlahnya. Jauh lebih hemat dibanding memanggil `getHistory` secara terpisah untuk setiap order.
 
-Cara paling umum — tunggu hingga ada pembayaran dengan nominal tertentu masuk.
+Cara paling umum dan paling efisien — tunggu hingga ada pembayaran dengan nominal tertentu masuk.
 
 ```js
 import { getGoPayWatcher } from './gobiz.js';
@@ -132,10 +146,10 @@ try {
 
 ---
 
-### 2. Mengambil Riwayat Transaksi ⭐ *(Direkomendasikan untuk Anti-Ban)*
+### 2. Mengambil Riwayat Transaksi *(Untuk Keperluan Audit/Debug)*
 
-> [!TIP]
-> Pendekatan ini **jauh lebih aman** dari sisi risiko ban karena kamu yang mengontrol kapan dan seberapa sering request dilakukan. Gunakan ini sebagai pengganti `GoPayWatcher` jika memungkinkan.
+> [!NOTE]
+> `getHistory` berguna untuk membaca riwayat transaksi secara satu kali — misalnya untuk laporan, audit, atau debugging. **Jangan** gunakan ini sebagai pengganti `GoPayWatcher` untuk memantau pembayaran masuk secara real-time: memanggil `getHistory` berulang kali untuk banyak order sekaligus justru menghasilkan lebih banyak request dibanding watcher.
 
 ```js
 import GoPayMerchant from './gobiz.js';
@@ -154,27 +168,23 @@ if (result.status) {
 }
 ```
 
-**Contoh pola cek manual yang aman (setiap 3 menit):**
+**Contoh penggunaan untuk audit satu kali:**
 
 ```js
 import GoPayMerchant from './gobiz.js';
 
 const merchant = new GoPayMerchant();
-const INTERVAL_MS = 3 * 60 * 1000; // 3 menit — aman dari risiko ban
 
-async function cekTransaksi() {
-  const result = await merchant.getHistory({ days: 1, size: 10 });
-  if (result.status) {
-    const transaksi = result.data.histories;
-    console.log(`[${new Date().toLocaleTimeString()}] Ditemukan ${transaksi.length} transaksi`);
-    // proses transaksi di sini...
+// Panggil sekali untuk keperluan laporan/audit
+const result = await merchant.getHistory({ days: 7, size: 50 });
+if (result.status) {
+  for (const tx of result.data.histories) {
+    console.log(tx.amount.displayed_text, '—', tx.time);
   }
 }
-
-// Jalankan pertama kali, lalu ulang setiap INTERVAL_MS
-cekTransaksi();
-setInterval(cekTransaksi, INTERVAL_MS);
 ```
+
+> Untuk pemantauan pembayaran real-time, gunakan `GoPayWatcher` — jauh lebih efisien karena cukup **1 request per interval** untuk mendeteksi semua transaksi baru sekaligus.
 
 **Parameter `getHistory`:**
 
@@ -249,6 +259,42 @@ const watcher = getGoPayWatcher();
 watcher.reset();
 // Semua ID transaksi yang diingat dihapus, seed ulang dimulai.
 ```
+
+---
+
+### 6. Contoh Script End-to-End (`payment.js`)
+
+Repo ini menyertakan `payment.js` — script siap pakai yang mendemonstrasikan alur pembayaran QRIS lengkap dari awal hingga selesai:
+
+```
+🔐 Auth ke GoBiz
+    ↓
+⚙️  Generate QRIS dinamis (sisipkan nominal + hitung ulang CRC16)
+    ↓
+🖼️  Render gambar QR Code
+    ↓
+☁️  Upload gambar → dapat URL
+    ↓
+📲  Tampilkan URL (kirim ke pengguna untuk di-scan)
+    ↓
+⏳  Tunggu pembayaran masuk via GoPayWatcher
+    ↓
+✅  Konfirmasi sukses → program selesai
+```
+
+**Cara menjalankan:**
+
+```bash
+# Pakai nominal default dari .env (PRICE_AMOUNT)
+node payment.js
+
+# Atau tentukan nominal langsung
+node payment.js 50000
+```
+
+> [!IMPORTANT]
+> Pastikan `QRIS_STRING` sudah diisi di file `.env` sebelum menjalankan script ini.
+> String QRIS statis bisa didapat dengan men-scan gambar QRIS dari portal GoBiz Merchant.
 
 ---
 
@@ -333,13 +379,13 @@ flowchart TD
 
 ## ⚠️ Catatan Penting
 
-- 🚨 **Risiko Banned Akun:** Penggunaan library pihak ketiga untuk mengakses API internal GoBiz memiliki risiko pemblokiran akun. Selalu gunakan interval pengecekan yang wajar dan hindari polling yang terlalu agresif.
+- Modul ini **bukan** library resmi Gojek/GoPay dan mengakses API internal GoBiz
 - Modul ini menggunakan `execFileSync('curl', ...)` untuk proses login — pastikan `curl` tersedia di sistem
 - Email & password dibaca dari file `.env` di direktori yang sama dengan `gobiz.js`
 - Token & merchant ID disimpan ke `.gopay_cache.json` yang **dibuat otomatis** — tidak perlu konfigurasi tambahan
 - Token yang kadaluarsa akan di-refresh otomatis saat request gagal dengan status `401`
 - Cache ID transaksi di `GoPayWatcher` dibatasi **500 entri** untuk mencegah memory leak
-- Modul ini **bukan** library resmi Gojek/GoPay
+
 - Tambahkan `.env`, `.gopay_cache.json`, dan `node_modules/` ke `.gitignore` untuk keamanan
 
 ---

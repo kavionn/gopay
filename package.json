@@ -19,6 +19,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "moment-timezone": "^0.5.45"
+    "moment-timezone": "^0.5.45",
+    "dotenv": "^16.4.5",
+    "crc": "^4.3.2",
+    "qrcode": "^1.5.4"
   }
 }

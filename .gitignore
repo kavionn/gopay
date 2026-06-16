@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment & secrets
+.env
+.gopay_cache.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
