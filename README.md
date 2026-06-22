@@ -1,4 +1,4 @@
-# GoPay Payment
+# GoBiz Payment
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-%3E%3D18-339933?logo=nodedotjs&logoColor=white" alt="Node.js" />
@@ -32,8 +32,8 @@ Modul Node.js untuk berinteraksi dengan API GoBiz (GoPay Merchant) — memungkin
 Clone repo ini lalu install dependensi:
 
 ```bash
-git clone https://github.com/kavionn/gopay.git
-cd gopay
+git clone https://github.com/kavionn/gobiz-payment.git
+cd gobiz-payment
 npm install
 ```
 
@@ -75,7 +75,7 @@ Buat file `.env` di direktori yang **sama** dengan `gobiz.js` dan isi dengan kre
 GOPAY_EMAIL=email@merchant.com
 GOPAY_PASSWORD=password_kamu
 
-# Diperlukan jika menggunakan payment.js
+# Diperlukan jika menggunakan demo.js
 # String QRIS statis dari akun GoPay Merchant kamu (bisa di-scan dari gambar QRIS)
 QRIS_STRING=00020101021226...
 
@@ -119,11 +119,12 @@ Cara paling umum dan paling efisien — tunggu hingga ada pembayaran dengan nomi
 ```js
 import { getGoPayWatcher } from './gobiz.js';
 
-const watcher = getGoPayWatcher();
+// Atur seberapa sering API di-poll (default: 7000ms = 7 detik)
+const watcher = getGoPayWatcher(7_000);
 
 try {
   const tx = await watcher.waitForPayment(50000, {
-    timeout: 5 * 60_000, // 5 menit
+    timeout: 5 * 60_000, // batas waktu maksimum menunggu (bukan frekuensi cek)
     tolerance: 0         // toleransi selisih nominal (Rp)
   });
 
@@ -136,13 +137,19 @@ try {
 }
 ```
 
+**Parameter `getGoPayWatcher`:**
+
+| Parameter    | Tipe     | Default | Keterangan                                         |
+|--------------|----------|---------|----------------------------------------------------|
+| `intervalMs` | `number` | `7000`  | Seberapa sering API di-poll (milidetik). Nilai terlalu kecil berisiko rate-limit. Disarankan ≥ 7000 ms |
+
 **Parameter `waitForPayment`:**
 
-| Parameter   | Tipe     | Default   | Keterangan                             |
-|-------------|----------|-----------|----------------------------------------|
-| `amount`    | `number` | *(wajib)* | Nominal yang ditunggu (dalam Rupiah)   |
-| `timeout`   | `number` | `300000`  | Batas waktu dalam milidetik (5 menit)  |
-| `tolerance` | `number` | `0`       | Toleransi selisih nominal (Rupiah)     |
+| Parameter   | Tipe     | Default   | Keterangan                                                        |
+|-------------|----------|-----------|-------------------------------------------------------------------|
+| `amount`    | `number` | *(wajib)* | Nominal yang ditunggu (dalam Rupiah)                              |
+| `timeout`   | `number` | `300000`  | Batas waktu **maksimum** menunggu (ms) — bukan frekuensi polling  |
+| `tolerance` | `number` | `0`       | Toleransi selisih nominal (Rupiah)                                |
 
 ---
 
@@ -262,9 +269,9 @@ watcher.reset();
 
 ---
 
-### 6. Contoh Script End-to-End (`payment.js`)
+### 6. Contoh Script End-to-End (`demo.js`)
 
-Repo ini menyertakan `payment.js` — script siap pakai yang mendemonstrasikan alur pembayaran QRIS lengkap dari awal hingga selesai:
+Repo ini menyertakan `demo.js` — script siap pakai yang mendemonstrasikan alur pembayaran QRIS lengkap dari awal hingga selesai:
 
 ```
 🔐 Auth ke GoBiz
@@ -286,10 +293,10 @@ Repo ini menyertakan `payment.js` — script siap pakai yang mendemonstrasikan a
 
 ```bash
 # Pakai nominal default dari .env (PRICE_AMOUNT)
-node payment.js
+node demo.js
 
 # Atau tentukan nominal langsung
-node payment.js 50000
+node demo.js 50000
 ```
 
 > [!IMPORTANT]
@@ -344,8 +351,14 @@ Mengembalikan instance `GoPayWatcher` singleton. Setiap kali fungsi ini dipanggi
 ```js
 import { getGoPayWatcher } from './gobiz.js';
 
-const watcher = getGoPayWatcher(7_000); // default 7 detik
+const watcher = getGoPayWatcher(10_000); // polling tiap 10 detik
 ```
+
+| Parameter    | Tipe     | Default | Keterangan                                              |
+|--------------|----------|---------|---------------------------------------------------------|
+| `intervalMs` | `number` | `7000`  | Interval polling dalam milidetik. Disarankan ≥ 7000 ms |
+
+> **Catatan:** `intervalMs` hanya berlaku saat instance pertama kali dibuat. Pemanggilan `getGoPayWatcher()` berikutnya akan mengabaikan parameter ini karena instance sudah ada (singleton).
 
 ---
 
@@ -404,10 +417,10 @@ import { GoPayWatcher, getGoPayWatcher } from './gobiz.js';
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=kavionn%2Fgopay&type=timeline&logscale=&legend=bottom-right">
+<a href="https://www.star-history.com/?repos=kavionn%2Fgobiz-payment&type=timeline&logscale=&legend=bottom-right">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=kavionn/gopay&type=timeline&theme=dark&logscale&legend=bottom-right" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=kavionn/gopay&type=timeline&logscale&legend=bottom-right" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=kavionn/gopay&type=timeline&logscale&legend=bottom-right" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=kavionn/gobiz-payment&type=timeline&theme=dark&logscale&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=kavionn/gobiz-payment&type=timeline&logscale&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=kavionn/gobiz-payment&type=timeline&logscale&legend=bottom-right" />
  </picture>
 </a>

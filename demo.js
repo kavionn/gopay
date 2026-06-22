@@ -52,59 +52,59 @@ async function uploadImage(buffer, filename = 'qris.jpg') {
 
 async function main() {
    console.log('━'.repeat(50));
-   console.log('  💳  Contoh Alur Pembayaran QRIS via GoBiz');
+   console.log('  Contoh Alur Pembayaran QRIS via GoBiz');
    console.log('━'.repeat(50));
 
    if (!QRIS_STRING) {
-      console.error('\n❌ QRIS_STRING belum diisi di file .env');
+      console.error('\nError: QRIS_STRING belum diisi di file .env');
       console.error('   Isi dengan string QRIS statis dari akun GoPay Merchant kamu.\n');
       process.exit(1);
    }
 
-   console.log('\n🔐 Autentikasi ke GoBiz...');
+   console.log('\nAutentikasi ke GoBiz...');
    const merchant = new GoPayMerchant();
    try {
       await merchant.init();
       console.log('   ✅ Autentikasi berhasil.');
    } catch (err) {
-      console.error('   ❌ Autentikasi gagal:', err.message);
+      console.error('   Gagal:', err.message);
       process.exit(1);
    }
 
-   console.log(`\n📦 Nominal pembayaran : Rp ${AMOUNT.toLocaleString('id-ID')}`);
+   console.log(`\nNominal pembayaran : Rp ${AMOUNT.toLocaleString('id-ID')}`);
 
-   console.log('\n⚙️  Menyisipkan nominal ke QRIS...');
+   console.log('\nMenyisipkan nominal ke QRIS...');
    let dynamicQris;
    try {
       dynamicQris = buildDynamicQris(QRIS_STRING, AMOUNT);
       console.log('   ✅ QRIS dinamis berhasil dibuat.');
    } catch (err) {
-      console.error('   ❌ Gagal membuat QRIS dinamis:', err.message);
+      console.error('   Gagal membuat QRIS dinamis:', err.message);
       process.exit(1);
    }
 
-   console.log('\n🖼️  Membuat gambar QR Code...');
+   console.log('\nMembuat gambar QR Code...');
    const imageBuffer = await generateQrisImage(dynamicQris);
    console.log('   ✅ Gambar QR Code berhasil dibuat.');
 
-   console.log('\n☁️  Mengupload gambar QRIS...');
+   console.log('\nMengupload gambar QRIS...');
    let qrisUrl;
    try {
       qrisUrl = await uploadImage(imageBuffer);
       console.log('   ✅ Upload berhasil.');
    } catch (err) {
-      console.error('   ❌ Gagal upload:', err.message);
+      console.error('   Gagal upload:', err.message);
       process.exit(1);
    }
 
    console.log('\n' + '─'.repeat(50));
-   console.log('📲  Scan QRIS berikut untuk membayar:');
+   console.log('Scan QRIS berikut untuk membayar:');
    console.log(`\n    ${qrisUrl}\n`);
    console.log(`    Nominal : Rp ${AMOUNT.toLocaleString('id-ID')}`);
    console.log('─'.repeat(50));
 
    const TIMEOUT_MS = 10 * 60_000;
-   console.log(`\n⏳  Menunggu pembayaran (timeout: ${TIMEOUT_MS / 60000} menit)...\n`);
+   console.log(`\nMenunggu pembayaran (timeout: ${TIMEOUT_MS / 60000} menit)...\n`);
 
    const watcher = new GoPayWatcher(merchant, 7_000);
 
@@ -124,12 +124,12 @@ async function main() {
       process.exit(0);
 
    } catch (err) {
-      console.error('\n❌ Pembayaran tidak terdeteksi:', err.message);
+      console.error('\nPembayaran tidak terdeteksi:', err.message);
       process.exit(1);
    }
 }
 
 main().catch((err) => {
-   console.error('\n💥 Error tidak terduga:', err.message);
+   console.error('\nError tidak terduga:', err.message);
    process.exit(1);
 });
